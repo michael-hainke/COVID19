@@ -52,7 +52,7 @@ p <- ggplot(filter(df_summary, HA == area), aes(year_week, Age_Group, fill= case
           y = "Age Group",
           x = "Week",
           title = paste0(area," Weekly COVID19 Cases per 100,000 Population"),
-          caption = "Chart: Michael Hainke Data: BCCDC Case Data Apr 29/21")
+          caption = "Chart: Michael Hainke Data: BCCDC Case Data")
 p
 
 
