@@ -40,7 +40,7 @@ df_summary <- rbind(df_summary_bc, df_summary_ha) %>%
                                          c(-1,5,10,15,20,35,50,100,150,200,300,600,Inf),
                                          labels = c("0-5",">5-10",">10-15",">15-20",">20-35",">35-50",">50-100",">100-150",">150-200",">200-300",">300-600",">600")))
 
-area <- 'Vancouver Island'  # Select Region
+area <- 'BC'  # Select Region
 
 # Case Heatmap 
 p <- ggplot(filter(df_summary, HA == area), aes(year_week, Age_Group, fill= case_rate_bin)) + 
@@ -84,7 +84,7 @@ p <- ggplot(df, aes(year_week, Age_Group, fill= rate_bin)) +
           y = "Age Group",
           x = "Week",
           title = paste0("BC Weekly COVID19 ",measure," per 1,000,000 Age Group Population"),
-          caption = "Chart: Michael Hainke Data: BC CDC Situation Report May 5/21")
+          caption = "Chart: Michael Hainke Data: BC CDC Situation Report")
 p
 
 # Calculate Hospitalization Rate by Case (not pop)
@@ -114,6 +114,48 @@ p <- ggplot(df, aes(year_week, Age_Group, fill= rate_bin)) +
           x = "Week",
           title = "Estimated Hospitalizations per 1000 cases (Hospitalizations / Cases 2 Weeks Prior)",
           caption = "Chart: Michael Hainke Data: BC CDC Situation Report Apr 28/21")
+p
+
+
+# LTC Outbreak Analysis
+
+# Load LTC data
+df_ltc <- read.csv("BC_COVID_LTC.csv") %>%
+          mutate(outbreak_start_date = parse_date_time(outbreak_start_date, orders = c('mdy', 'ymd')),
+                 outbreak_end_date = parse_date_time(outbreak_end_date, orders = c('mdy', 'ymd'))) %>%
+          mutate(yr = year(as.Date(outbreak_start_date)),
+                 wk = week(as.Date(outbreak_start_date))) %>%
+          mutate(year_week = as.character(ymd(paste0(yr,"-01-07")) + weeks(wk-1)))
+
+# Tidy LTC data
+df_tidy <- rename(df_ltc, LTC_cases = cases_residents, LTC_deaths = deaths_residents, LTC_staff_cases = cases_staff, LTC_staff_deaths = deaths_staff) %>%
+           pivot_longer(cols = c(LTC_cases, LTC_deaths, LTC_staff_cases, LTC_staff_deaths),
+                        names_to = "metric",
+                        values_to = "count") %>%
+           group_by(metric, year_week) %>%
+           summarise(cases = sum(count)) %>%
+           select(metric, year_week, cases) %>%
+           filter(metric %in% c("LTC_cases", "LTC_staff_cases"))
+
+# Summarize BC Weekly Case Data
+df_summary_bc <- df_case %>%
+                 mutate(metric = case_when(Age_Group %in% c("70-79","80-89","90+") ~ "70+ Total",
+                                           Age_Group %in% c("60-69") ~ "60-69",
+                                           TRUE ~ "Total Under 60")) %>%
+                 group_by(metric, year_week) %>%
+                 summarise(cases = n()) %>%
+                 select(metric, year_week, cases) %>%
+                 filter(metric %in% c("70+ Total", "60-69"))
+
+df_tidy <- rbind(df_tidy, df_summary_bc)
+
+p <- ggplot(df_tidy, aes(x=year_week, y=cases, group=metric, colour=metric)) + 
+   geom_line(size=1) +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), legend.position="bottom") + 
+   labs(y = "Number of Cases",
+        x = "Week",
+        title = "BC Weekly COVID19 Cases",
+        caption = "Chart: Michael Hainke  Data: BC CDC")
 p
 
 
