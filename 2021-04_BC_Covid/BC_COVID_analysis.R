@@ -174,10 +174,11 @@ two_dose_cases = 120
 non_vaccinated_cases = 78020
 
 # Alternate: Calculate only > 60 Adult Cases from BC CDC Case Data (to approximate similar demographics to vaccinated)
-non_vaccinated_cases <- df_case %>%
-                        filter(!Age_Group %in% c('<10', '10-19', '20-39', '30-39', '40-49', '50-59'),
-                               Reported_Date %within% interval(ymd("2020-12-27"), ymd("2021-05-01"))) %>%
-                        count()
+total_cases <- df_case %>%
+               filter(!Age_Group %in% c('<10', '10-19', '20-39', '30-39', '40-49', '50-59'),
+                      Reported_Date %within% interval(ymd("2020-12-27"), ymd("2021-05-01"))) %>%
+               count()
+non_vaccinated_cases <- total_cases - one_dose_cases - two_dose_cases
 
 # Load Covid Tracker data (to get vaccination dates)
 # Data: https://covid19tracker.ca/vaccinationtracker.html
@@ -214,4 +215,28 @@ two_dose_rate / non_vax_rate
 two_dose_rate / one_dose_rate
 
 
+# Compare Hospitalization Rates
+
+# From presentation
+one_dose_hosps <- 141
+
+# Estimate total hospitalizations from Situation Report (underestimate since don't have data from Dec. 27 to Jan. 16)
+total_hosps_df <- df_situation %>%
+                  filter(Age_Group %in% c('60-69','70-79','80-89','90+'),
+                         metric == 'Hospitalizations',
+                         year_week %in% c('2021-05-01','2021-01-16')) %>%
+                  group_by(year_week) %>%
+                  summarise(tot = sum(total))
+
+total_hosps <- as.numeric(total_hosps_df[total_hosps_df$year_week == '2021-05-01','tot']) - as.numeric(total_hosps_df[total_hosps_df$year_week == '2021-01-16','tot'])
+
+no_dose_hosps <- total_hosps - one_dose_hosps
+
+non_vax_rate = (no_dose_hosps / total_non_vax_days) * 1000000
+one_dose_rate = (one_dose_hosps / total_one_dose_vax_days) * 1000000
+
+non_vax_rate
+one_dose_rate
+
+one_dose_rate / non_vax_rate 
 
