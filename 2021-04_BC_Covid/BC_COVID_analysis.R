@@ -2,8 +2,11 @@
 library(tidyverse)
 library(lubridate)
 
+#########################
 ## COVID CASE HEATMAPS ##
-## Data:  http://www.bccdc.ca/Health-Info-Site/Documents/BCCDC_COVID19_Dashboard_Case_Details.csv
+#########################
+
+# Data:  http://www.bccdc.ca/Health-Info-Site/Documents/BCCDC_COVID19_Dashboard_Case_Details.csv
 
 # Load BC CDC Case Data
 df_case <- read.csv("BCCDC_COVID19_Dashboard_Case_Details.csv") %>%
@@ -55,8 +58,10 @@ p <- ggplot(filter(df_summary, HA == area), aes(year_week, Age_Group, fill= case
           caption = "Chart: Michael Hainke Data: BCCDC Case Data")
 p
 
-
+###################################
 ## COVID HOSP/ICU/DEATH HEATMAPS ##
+###################################
+
 ## Data:  Manually entered from BC CDC situation reports  http://www.bccdc.ca/health-info/diseases-conditions/covid-19/data#Situationreport
 
 # Load BC Situation Report Data
@@ -116,8 +121,9 @@ p <- ggplot(df, aes(year_week, Age_Group, fill= rate_bin)) +
           caption = "Chart: Michael Hainke Data: BC CDC Situation Report Apr 28/21")
 p
 
-
-# LTC Outbreak Analysis
+###########################
+## LTC Outbreak Analysis ##
+###########################
 
 # Load LTC data
 df_ltc <- read.csv("BC_COVID_LTC.csv") %>%
@@ -158,6 +164,54 @@ p <- ggplot(df_tidy, aes(x=year_week, y=cases, group=metric, colour=metric)) +
         caption = "Chart: Michael Hainke  Data: BC CDC")
 p
 
+################################
+## Vaccine Efficacy Estimates ##
+################################
+
+# Breakthrough Cases (from BC CDC presentation)
+one_dose_cases = 1340
+two_dose_cases = 120
+non_vaccinated_cases = 78020
+
+# Alternate: Calculate only > 60 Adult Cases from BC CDC Case Data (to approximate similar demographics to vaccinated)
+non_vaccinated_cases <- df_case %>%
+                        filter(!Age_Group %in% c('<10', '10-19', '20-39', '30-39', '40-49', '50-59'),
+                               Reported_Date %within% interval(ymd("2020-12-27"), ymd("2021-05-01"))) %>%
+                        count()
+
+# Load Covid Tracker data (to get vaccination dates)
+# Data: https://covid19tracker.ca/vaccinationtracker.html
+
+df_vax <- read.csv("COVID19Tracker.ca Data - BC.csv") %>%
+          mutate(date = as.Date(date)) %>%
+          mutate(one_dose_days = case_when((as.Date('2021-05-01') - date - 21) > 0 ~ (as.Date('2021-05-01') - date - 21),
+                                                TRUE ~ 0),
+                 two_dose_days = case_when((as.Date('2021-05-01') - date - 7) > 0 ~ (as.Date('2021-05-01') - date - 7),
+                                                TRUE ~ 0)) %>%
+          mutate(one_dose_vax_days = as.numeric((change_vaccinations - change_vaccinated) * one_dose_days - change_vaccinated * two_dose_days),
+                 two_dose_vax_days = as.numeric(change_vaccinated * two_dose_days)) %>%
+          replace_na(list(one_dose_vax_days=0, two_dose_vax_days=0))
+
+# calc total days of vaccinations
+total_one_dose_vax_days = sum(df_vax$one_dose_vax_days)
+total_two_dose_vax_days = sum(df_vax$two_dose_vax_days)
+
+# calc total days of non-vaccinated
+adult_pop <- sum(df_pop[!df_pop$age_group %in% c('<10', '10-19', '20-29', '30-39', '40-49', '50-59') & df_pop$HA == 'BC',"population"])
+total_non_vax_days = (adult_pop * (as.numeric(as.Date('2021-05-01') - as.Date('2020-12-27'))) - total_one_dose_vax_days - total_two_dose_vax_days)
+          
+# Calc Case Rates
+non_vax_rate = (non_vaccinated_cases / total_non_vax_days) * 1000000
+one_dose_rate = (one_dose_cases / total_one_dose_vax_days) * 1000000
+two_dose_rate = (two_dose_cases / total_two_dose_vax_days) * 1000000
+
+non_vax_rate
+one_dose_rate
+two_dose_rate
+
+one_dose_rate / non_vax_rate 
+two_dose_rate / non_vax_rate
+two_dose_rate / one_dose_rate
 
 
 
