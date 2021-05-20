@@ -43,7 +43,7 @@ df_summary <- rbind(df_summary_bc, df_summary_ha) %>%
                                          c(-1,5,10,15,20,35,50,100,150,200,300,600,Inf),
                                          labels = c("0-5",">5-10",">10-15",">15-20",">20-35",">35-50",">50-100",">100-150",">150-200",">200-300",">300-600",">600")))
 
-area <- 'BC'  # Select Region
+area <- 'Vancouver Island'  # Select Region
 
 # Case Heatmap 
 p <- ggplot(filter(df_summary, HA == area), aes(year_week, Age_Group, fill= case_rate_bin)) + 
@@ -70,7 +70,7 @@ df_situation <- read.csv("BC_COVID_Weekly_Data.csv") %>%
                        year_week = as.character(as.Date(year_week, format="%d/%m/%Y"))) %>%
                 filter(!year_week %in% c("2020-05-07","2020-10-17","2021-01-09")) 
 
-measure <- "Hospitalizations"  # Select metric (Hospitalizations, ICU, Deaths)
+measure <- "Deaths"  # Select metric (Hospitalizations, ICU, Deaths)
 
 df <- df_situation %>%
       filter(metric == measure) %>% 
