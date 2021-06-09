@@ -1,0 +1,13 @@
+name: BC_COVID19
+title: BC_COVID19
+username:
+account: michael-hainke
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4178095
+bundleId: 4694929
+url: https://michael-hainke.shinyapps.io/BC_COVID19/
+when: 1623213386.34431
+lastSyncTime: 1623213386.34431
+asMultiple: FALSE
+asStatic: FALSE
